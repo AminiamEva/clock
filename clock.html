@@ -42,12 +42,18 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 #zones button{display:block;width:100%;height:auto;min-height:44px;padding:.5rem .65rem;text-align:left;overflow-wrap:anywhere;font-size:.9rem}
 #no-zones{padding:0 .65rem;font-size:.9rem}
 @media (pointer:coarse){#zone-trigger{height:44px}}
+#wheel{width:min(100%,68dvh);margin:auto}
+#wheel svg{display:block;width:100%;overflow:visible}
+.wheel-ring{transition:transform .65s ease-out}
+.wheel-ring text{fill:currentColor;opacity:.55;font-size:14px;font-variant-numeric:tabular-nums}
+.wheel-ring text.current{fill:light-dark(#0959ae,#83c6ff);opacity:1;font-weight:750}
+@media (prefers-reduced-motion:reduce){.wheel-ring{transition:none}}
 </style>
 <aside class="controls">
 <div class="panel" role="group" aria-label="Clock display">
 <button type="button" data-mode="digital" aria-pressed="true" aria-label="Digital" title="Digital"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M7 9v6m5-5v.1m0 3.9v.1m5-5v6"/></svg></button>
 <button type="button" data-mode="analog" aria-pressed="false" aria-label="Analog" title="Analog"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></button>
-<button type="button" disabled aria-label="Wheel, coming soon" title="Wheel, coming soon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18m-6-15 12 12M18 6 6 18"/></svg></button>
+<button type="button" data-mode="wheel" aria-pressed="false" aria-label="Wheel" title="Wheel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18m-6-15 12 12M18 6 6 18"/></svg></button>
 </div>
 <div class="panel" role="group" aria-label="Color theme">
 <button type="button" data-theme-choice="system" aria-pressed="true" aria-label="Follow system" title="Follow system"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v4m-4 0h8"/></svg></button>
@@ -75,7 +81,7 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 <circle cx="120" cy="120" r="4" fill="#ff9500"/>
 </svg>
 </div>
-<div class="details"><div id="date"></div>
+<div id="wheel" hidden><svg viewBox="-350 -350 700 700" role="img" aria-label="Time wheel"></svg></div><div class="details"><div id="date"></div>
 <div id="zone"></div></div>
 </main>
 <script>
@@ -149,6 +155,8 @@ bindSegments("[data-theme-choice]", ({themeChoice}) => {
 bindSegments("[data-mode]", ({mode}) => {
     find("digital").hidden = mode !== "digital";
     find("analog").hidden = mode !== "analog";
+    find("wheel").hidden = mode !== "wheel";
+    update();
 });
 for (let tick = 0; tick < 60; tick++) {
     const major = tick % 5 === 0;
@@ -206,6 +214,61 @@ document.addEventListener("visibilitychange", () => {
     if (!document.hidden) syncClock();
 });
 setInterval(syncClock, 5 * 60 * 1000);
+const wheelSVG = find("wheel").querySelector("svg");
+const svgElement = name => document.createElementNS(wheelSVG.namespaceURI, name);
+const dateFields = new Intl.DateTimeFormat("en-GB", {month:"short", weekday:"short"});
+const labels = (count, format) => Array.from({length:count}, (_, index) => format(index));
+const twoDigits = number => String(number).padStart(2, "0");
+const weekdays = labels(7, index => dateFields.formatToParts(new Date(2024, 0, 7 + index, 12)).find(part => part.type === "weekday").value);
+const rings = [
+    labels(12, index => dateFields.formatToParts(new Date(2024, index, 1, 12)).find(part => part.type === "month").value),
+    labels(31, index => {
+        const day = index + 1;
+        const suffix = day >= 11 && day <= 13 ? "th" : ({1:"st", 2:"nd", 3:"rd"}[day % 10] ?? "th");
+        return day + suffix;
+    }),
+    weekdays,
+    labels(24, index => twoDigits(index) + "h"),
+    labels(60, index => twoDigits(index) + "min"),
+    labels(60, index => twoDigits(index) + "s")
+].map((values, ringIndex) => {
+    const group = svgElement("g");
+    group.classList.add("wheel-ring");
+    const nodes = values.map((value, index) => {
+        const text = svgElement("text");
+        text.textContent = value;
+        text.setAttribute("x", 26 + ringIndex * 54);
+        text.setAttribute("dominant-baseline", "central");
+        text.setAttribute("transform", "rotate(" + index * 360 / values.length + ")");
+        group.append(text);
+        return text;
+    });
+    wheelSVG.append(group);
+    return {group, nodes, angle:0, current:undefined};
+});
+function updateWheel(now, h, m, s) {
+    if (find("wheel").hidden) return;
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
+        timeZone, month:"numeric", day:"numeric", weekday:"short"
+    }).formatToParts(now).map(({type,value}) => [type,value]));
+    [Number(parts.month) - 1, Number(parts.day) - 1, weekdays.indexOf(parts.weekday), h, m, s]
+        .forEach((index, ringIndex) => {
+            const ring = rings[ringIndex];
+            if (ring.current === index) return;
+            const step = 360 / ring.nodes.length;
+            if (ring.current === undefined) {
+                ring.angle = -index * step;
+            } else {
+                const count = ring.nodes.length;
+                const difference = (index - ring.current + count) % count;
+                ring.angle -= (difference > count / 2 ? difference - count : difference) * step;
+                ring.nodes[ring.current].classList.remove("current");
+            }
+            ring.group.style.transform = "rotate(" + ring.angle + "deg)";
+            ring.nodes[index].classList.add("current");
+            ring.current = index;
+        });
+}
 function update() {
     const now = navigator.onLine && calibration
         ? new Date(calibration.time + performance.now() - calibration.measuredAt)
@@ -216,6 +279,7 @@ function update() {
     const time = formatter.format(now);
     const [h,m,s] = time.split(":").map(Number);
     find("digital").textContent = time;
+    updateWheel(now, h, m, s);
     for (const [id, angle] of [["hour", h * 30 + m / 2], ["minute", m * 6 + s / 10], ["second", s * 6]]) {
         find(id).setAttribute("transform", `rotate(${angle} 120 120)`);
     }
@@ -227,7 +291,6 @@ document.querySelector(".card").style.removeProperty("visibility");
 setInterval(update, 100);
 syncClock();
 </script>
-
 
 
 
