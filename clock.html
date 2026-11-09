@@ -45,13 +45,14 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 #wheel{width:min(100%,74dvh);margin:auto}
 #wheel svg{display:block;width:100%;overflow:visible}
 .wheel-ring{transition:transform .65s ease-out}
-.wheel-ring text{fill:currentColor;opacity:.62;font-size:18px;font-variant-numeric:tabular-nums}
-.wheel-ring text.current{fill:light-dark(#0959ae,#83c6ff);opacity:1;font-size:22px;font-weight:750}
+.wheel-ring text{fill:currentColor;opacity:.52;font-size:15px;font-variant-numeric:tabular-nums}
+.wheel-ring text.current{fill:light-dark(#0959ae,#83c6ff);opacity:1;font-size:32px;font-weight:750}
 @media (prefers-reduced-motion:reduce){.wheel-ring{transition:none}}
 .card:has(#wheel:not([hidden])){width:min(64vw,calc(100vw - 2rem));padding:clamp(.75rem,2vw,1.75rem)}
 @media (max-width:640px){
     .card:has(#wheel:not([hidden])){width:calc(100vw - 1rem)}
 }
+.wheel-unit{fill:currentColor;opacity:.72;font-size:17px}
 </style>
 <aside class="controls">
 <div class="panel" role="group" aria-label="Clock display">
@@ -223,9 +224,9 @@ const svgElement = name => document.createElementNS(wheelSVG.namespaceURI, name)
 const labels = (count, format) => Array.from({length:count}, (_, index) => format(index));
 const twoDigits = number => String(number).padStart(2, "0");
 const rings = [
-    labels(24, index => twoDigits(index) + "h"),
-    labels(60, index => twoDigits(index) + "min"),
-    labels(60, index => twoDigits(index) + "s")
+    labels(24, twoDigits),
+    labels(60, twoDigits),
+    labels(60, twoDigits)
 ].map((values, ringIndex) => {
     const group = svgElement("g");
     group.classList.add("wheel-ring");
@@ -240,6 +241,15 @@ const rings = [
     });
     wheelSVG.append(group);
     return {group, nodes, angle:0, current:undefined};
+});
+["h", "min", "s"].forEach((unit, index) => {
+    const label = svgElement("text");
+    label.classList.add("wheel-unit");
+    label.setAttribute("x", 130 + index * 86);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("dominant-baseline", "central");
+    label.textContent = unit;
+    wheelSVG.append(label);
 });
 function updateWheel(h, m, s) {
     if (find("wheel").hidden) return;
@@ -283,6 +293,5 @@ document.querySelector(".card").style.removeProperty("visibility");
 setInterval(update, 100);
 syncClock();
 </script>
-
 
 
