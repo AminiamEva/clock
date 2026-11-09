@@ -42,12 +42,16 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 #zones button{display:block;width:100%;height:auto;min-height:44px;padding:.5rem .65rem;text-align:left;overflow-wrap:anywhere;font-size:.9rem}
 #no-zones{padding:0 .65rem;font-size:.9rem}
 @media (pointer:coarse){#zone-trigger{height:44px}}
-#wheel{width:min(100%,68dvh);margin:auto}
+#wheel{width:min(100%,74dvh);margin:auto}
 #wheel svg{display:block;width:100%;overflow:visible}
 .wheel-ring{transition:transform .65s ease-out}
-.wheel-ring text{fill:currentColor;opacity:.55;font-size:14px;font-variant-numeric:tabular-nums}
-.wheel-ring text.current{fill:light-dark(#0959ae,#83c6ff);opacity:1;font-weight:750}
+.wheel-ring text{fill:currentColor;opacity:.62;font-size:18px;font-variant-numeric:tabular-nums}
+.wheel-ring text.current{fill:light-dark(#0959ae,#83c6ff);opacity:1;font-size:22px;font-weight:750}
 @media (prefers-reduced-motion:reduce){.wheel-ring{transition:none}}
+.card:has(#wheel:not([hidden])){width:min(64vw,calc(100vw - 2rem));padding:clamp(.75rem,2vw,1.75rem)}
+@media (max-width:640px){
+    .card:has(#wheel:not([hidden])){width:calc(100vw - 1rem)}
+}
 </style>
 <aside class="controls">
 <div class="panel" role="group" aria-label="Clock display">
@@ -81,7 +85,7 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 <circle cx="120" cy="120" r="4" fill="#ff9500"/>
 </svg>
 </div>
-<div id="wheel" hidden><svg viewBox="-350 -350 700 700" role="img" aria-label="Time wheel"></svg></div><div class="details"><div id="date"></div>
+<div id="wheel" hidden><svg viewBox="-320 -320 640 640" role="img" aria-label="Time wheel"></svg></div><div class="details"><div id="date"></div>
 <div id="zone"></div></div>
 </main>
 <script>
@@ -228,7 +232,7 @@ const rings = [
     const nodes = values.map((value, index) => {
         const text = svgElement("text");
         text.textContent = value;
-        text.setAttribute("x", 130 + ringIndex * 82);
+        text.setAttribute("x", 86 + ringIndex * 86);
         text.setAttribute("dominant-baseline", "central");
         text.setAttribute("transform", "rotate(" + index * 360 / values.length + ")");
         group.append(text);
@@ -279,7 +283,6 @@ document.querySelector(".card").style.removeProperty("visibility");
 setInterval(update, 100);
 syncClock();
 </script>
-
 
 
 
