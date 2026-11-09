@@ -172,8 +172,44 @@ for (let tick = 0; tick < 60; tick++) {
         find("dial").append(number);
     }
 }
+let calibration;
+let syncing = false;
+async function syncClock() {
+    if (syncing || !navigator.onLine) return;
+    syncing = true;
+    const start = performance.now();
+    try {
+        const url = new URL("clock.svg", location.href);
+        url.searchParams.set("sync", Date.now());
+        const response = await fetch(url, {
+            method: "HEAD", cache: "no-store", signal: AbortSignal.timeout(5000)
+        });
+        const end = performance.now();
+        const serverTime = Date.parse(response.headers.get("Date"));
+        if (!response.ok || !Number.isFinite(serverTime) || Number(response.headers.get("Age")) > 0) {
+            throw new Error("No fresh server time");
+        }
+        calibration = {time: serverTime + 500 + (end - start) / 2, measuredAt: end};
+    } catch {
+        calibration = undefined;
+    } finally {
+        syncing = false;
+        update();
+    }
+}
+window.addEventListener("offline", () => {
+    calibration = undefined;
+    update();
+});
+window.addEventListener("online", syncClock);
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) syncClock();
+});
+setInterval(syncClock, 5 * 60 * 1000);
 function update() {
-    const now = new Date();
+    const now = navigator.onLine && calibration
+        ? new Date(calibration.time + performance.now() - calibration.measuredAt)
+        : new Date();
     const formatter = new Intl.DateTimeFormat("en-GB", {
         timeZone, hourCycle:"h23", hour:"2-digit", minute:"2-digit", second:"2-digit"
     });
@@ -188,8 +224,10 @@ function update() {
 }
 update();
 document.querySelector(".card").style.removeProperty("visibility");
-setInterval(update, 1000);
+setInterval(update, 100);
+syncClock();
 </script>
+
 
 
 
