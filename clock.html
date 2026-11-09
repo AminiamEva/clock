@@ -32,6 +32,16 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 #digital {line-height:1.08}
 
 .controls {z-index:1}
+#zone-trigger{display:flex;align-items:center;justify-content:space-between;gap:.4rem;padding:0 .65rem;min-width:0;font-size:.8rem}
+#zone-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#zone-trigger svg{flex:none;width:14px}
+#zone-picker{position:absolute;top:calc(100% + .5rem);right:0;display:grid;box-sizing:border-box;width:min(20rem,calc(100vw - 2rem));border-radius:18px;padding:.55rem;background:light-dark(#f9fafc,#282d3f)}
+#zone-picker[hidden],#zones button[hidden]{display:none}
+#timezone{box-sizing:border-box;min-height:44px;font-size:16px;border-radius:12px;background:light-dark(#e9edf4,#ffffff14)}
+#zones{max-height:clamp(3rem,calc(100dvh - 15rem),18rem);overflow:auto;overscroll-behavior:contain}
+#zones button{display:block;width:100%;height:auto;min-height:44px;padding:.5rem .65rem;text-align:left;overflow-wrap:anywhere;font-size:.9rem}
+#no-zones{padding:0 .65rem;font-size:.9rem}
+@media (pointer:coarse){#zone-trigger{height:44px}}
 </style>
 <aside class="controls">
 <div class="panel" role="group" aria-label="Clock display">
@@ -44,7 +54,12 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 <button type="button" data-theme-choice="light" aria-pressed="false" aria-label="Light" title="Light"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19m0-14-1.5 1.5m-11 11L5 19"/></svg></button>
 <button type="button" data-theme-choice="dark" aria-pressed="false" aria-label="Dark" title="Dark"><svg viewBox="0 0 24 24"><path d="M20.5 15A9 9 0 0 1 9 3.5 9 9 0 1 0 20.5 15Z"/></svg></button>
 </div>
-<div class="panel"><input id="timezone" list="zones" aria-label="Search time zones" placeholder="System time zone" autocomplete="off"><datalist id="zones"></datalist></div>
+<div class="panel"><button id="zone-trigger" type="button" aria-expanded="false" aria-controls="zone-picker"><span id="zone-label">System time zone</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>
+<section id="zone-picker" class="panel" hidden aria-label="Choose time zone">
+<input id="timezone" type="search" aria-label="Search time zones" placeholder="Search time zones" autocomplete="off">
+<div id="zones"></div>
+<p id="no-zones" hidden>No matching time zones</p>
+</section>
 </aside>
 <main class="card" style="visibility:hidden">
 <div id="digital"></div>
@@ -67,18 +82,59 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 const find = id => document.getElementById(id);
 const systemLabel = "System time zone";
 const options = [systemLabel, "UTC", ...Intl.supportedValuesOf("timeZone")];
-for (const value of options) find("zones").append(new Option(value));
+const trigger = find("zone-trigger");
+const picker = find("zone-picker");
+const search = find("timezone");
 let timeZone;
-find("timezone").addEventListener("input", event => {
-    const value = event.target.value.trim();
-    if (!value || value === systemLabel) timeZone = undefined;
-    else if (options.includes(value)) timeZone = value;
-    else return;
-    update();
+function closePicker(restoreFocus) {
+    picker.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+    if (restoreFocus) trigger.focus();
+}
+const zoneButtons = options.map(value => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = value.replaceAll("_", " ");
+    button.setAttribute("aria-pressed", value === systemLabel);
+    button.addEventListener("click", () => {
+        timeZone = value === systemLabel ? undefined : value;
+        find("zone-label").textContent = button.textContent;
+        for (const item of zoneButtons) item.setAttribute("aria-pressed", item === button);
+        closePicker(true);
+        update();
+    });
+    find("zones").append(button);
+    return button;
 });
-find("timezone").addEventListener("blur", () => {
-    find("timezone").value = timeZone ?? "";
+function filterZones() {
+    const query = search.value.trim().toLowerCase().replaceAll("_", " ");
+    let matches = 0;
+    for (const button of zoneButtons) {
+        button.hidden = !button.textContent.toLowerCase().includes(query);
+        if (!button.hidden) matches++;
+    }
+    find("no-zones").hidden = matches > 0;
+    find("zones").scrollTop = 0;
+}
+search.addEventListener("input", filterZones);
+trigger.addEventListener("click", () => {
+    if (!picker.hidden) {
+        closePicker(false);
+        return;
+    }
+    search.value = "";
+    filterZones();
+    picker.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+    if (matchMedia("(pointer:fine)").matches) search.focus();
 });
+document.addEventListener("pointerdown", event => {
+    if (!picker.hidden && !picker.contains(event.target) && !trigger.contains(event.target)) closePicker(false);
+});
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !picker.hidden) closePicker(true);
+});
+
 function bindSegments(selector, choose) {
     const buttons = document.querySelectorAll(selector);
     for (const button of buttons) button.addEventListener("click", () => {
@@ -134,6 +190,7 @@ update();
 document.querySelector(".card").style.removeProperty("visibility");
 setInterval(update, 1000);
 </script>
+
 
 
 
