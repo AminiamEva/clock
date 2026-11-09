@@ -3,29 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <title>Beijing Clock (UTC+8)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
+    :root {
+        color-scheme: light dark;
+    }
+
+    :root[data-theme="light"] { color-scheme: light; }
+    :root[data-theme="dark"] { color-scheme: dark; }
+
+    #theme {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font: inherit;
+        padding: .4rem;
+    }
     body {
         margin: 0;
         height: 100vh;
         display: flex;
         justify-content: center;
         align-items: center;
-        background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+        background: linear-gradient(135deg, light-dark(#f5f7fa, #1e1e2f), light-dark(#c3cfe2, #2c3e50));
         font-family: "Segoe UI", Roboto, sans-serif;
-        color: #333333;
+        color: light-dark(#333333, #ffffff);
     }
 
     .clock-container {
         text-align: center;
-        padding: 40px 60px;
+        padding: 40px clamp(16px, 8vw, 60px);
         border-radius: 20px;
-        background: rgba(255, 255, 255, 0.7);
+        background: light-dark(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.05));
         backdrop-filter: blur(10px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        box-shadow: 0 20px 40px light-dark(rgba(0,0,0,0.1), rgba(0,0,0,0.4));
     }
 
     .time {
-        font-size: 4rem;
+        font-size: clamp(2.5rem, 10vw, 4rem);
         letter-spacing: 2px;
     }
 
@@ -43,6 +58,11 @@
 </style>
 </head>
 <body>
+<select id="theme" aria-label="Color theme">
+    <option value="system">System theme</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+</select>
 
 <div class="clock-container">
     <div class="time" id="time">--:--:--</div>
@@ -51,6 +71,15 @@
 </div>
 
 <script>
+const theme = document.getElementById("theme");
+theme.addEventListener("change", () => {
+    if (theme.value === "system") {
+        delete document.documentElement.dataset.theme;
+    } else {
+        document.documentElement.dataset.theme = theme.value;
+    }
+});
+
 function updateClock() {
     const now = new Date();
 
