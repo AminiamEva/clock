@@ -216,18 +216,9 @@ document.addEventListener("visibilitychange", () => {
 setInterval(syncClock, 5 * 60 * 1000);
 const wheelSVG = find("wheel").querySelector("svg");
 const svgElement = name => document.createElementNS(wheelSVG.namespaceURI, name);
-const dateFields = new Intl.DateTimeFormat("en-GB", {month:"short", weekday:"short"});
 const labels = (count, format) => Array.from({length:count}, (_, index) => format(index));
 const twoDigits = number => String(number).padStart(2, "0");
-const weekdays = labels(7, index => dateFields.formatToParts(new Date(2024, 0, 7 + index, 12)).find(part => part.type === "weekday").value);
 const rings = [
-    labels(12, index => dateFields.formatToParts(new Date(2024, index, 1, 12)).find(part => part.type === "month").value),
-    labels(31, index => {
-        const day = index + 1;
-        const suffix = day >= 11 && day <= 13 ? "th" : ({1:"st", 2:"nd", 3:"rd"}[day % 10] ?? "th");
-        return day + suffix;
-    }),
-    weekdays,
     labels(24, index => twoDigits(index) + "h"),
     labels(60, index => twoDigits(index) + "min"),
     labels(60, index => twoDigits(index) + "s")
@@ -237,7 +228,7 @@ const rings = [
     const nodes = values.map((value, index) => {
         const text = svgElement("text");
         text.textContent = value;
-        text.setAttribute("x", 26 + ringIndex * 54);
+        text.setAttribute("x", 130 + ringIndex * 82);
         text.setAttribute("dominant-baseline", "central");
         text.setAttribute("transform", "rotate(" + index * 360 / values.length + ")");
         group.append(text);
@@ -246,12 +237,9 @@ const rings = [
     wheelSVG.append(group);
     return {group, nodes, angle:0, current:undefined};
 });
-function updateWheel(now, h, m, s) {
+function updateWheel(h, m, s) {
     if (find("wheel").hidden) return;
-    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-GB", {
-        timeZone, month:"numeric", day:"numeric", weekday:"short"
-    }).formatToParts(now).map(({type,value}) => [type,value]));
-    [Number(parts.month) - 1, Number(parts.day) - 1, weekdays.indexOf(parts.weekday), h, m, s]
+    [h, m, s]
         .forEach((index, ringIndex) => {
             const ring = rings[ringIndex];
             if (ring.current === index) return;
@@ -279,7 +267,7 @@ function update() {
     const time = formatter.format(now);
     const [h,m,s] = time.split(":").map(Number);
     find("digital").textContent = time;
-    updateWheel(now, h, m, s);
+    updateWheel(h, m, s);
     for (const [id, angle] of [["hour", h * 30 + m / 2], ["minute", m * 6 + s / 10], ["second", s * 6]]) {
         find(id).setAttribute("transform", `rotate(${angle} 120 120)`);
     }
@@ -291,7 +279,6 @@ document.querySelector(".card").style.removeProperty("visibility");
 setInterval(update, 100);
 syncClock();
 </script>
-
 
 
 
