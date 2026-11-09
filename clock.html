@@ -26,11 +26,12 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 @media (max-width: 640px) {
     .card {width:calc(100vw - 2rem)}
 }
-@media (max-height: 420px) {
-    .controls {position:relative;top:auto;right:auto;justify-self:end;margin:1rem}
-    body {grid-template-rows:auto 1fr}
-    .card {margin-bottom:1rem}
-}
+
+.card {display:grid;grid-template-rows:1fr auto 1fr}
+.card::before {content:"";grid-row:1;grid-column:1}
+#digital,#analog {grid-row:2;grid-column:1}
+.details {grid-row:3;grid-column:1}
+.controls {z-index:1}
 </style>
 <aside class="controls">
 <div class="panel" role="group" aria-label="Clock display">
@@ -59,8 +60,8 @@ input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
 <circle cx="120" cy="120" r="4" fill="#ff9500"/>
 </svg>
 </div>
-<div id="date"></div>
-<div id="zone"></div>
+<div class="details"><div id="date"></div>
+<div id="zone"></div></div>
 </main>
 <script>
 const find = id => document.getElementById(id);
@@ -132,4 +133,5 @@ function update() {
 update();
 setInterval(update, 1000);
 </script>
+
 
