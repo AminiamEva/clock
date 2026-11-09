@@ -18,11 +18,19 @@ button[aria-pressed=true]{background:light-dark(#fff,#ffffff30)}
 button:disabled{opacity:.35;cursor:default}
 button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 input{width:100%;min-width:0;padding:.35rem .65rem;font-size:.8rem}
-.card{text-align:center;border-radius:24px;padding:2rem clamp(1rem,7vw,4rem);margin:10rem 1rem 2rem}
-#digital{font-size:clamp(2.6rem,11vw,4.5rem);font-variant-numeric:tabular-nums}
-#analog{width:min(60vw,250px);margin:auto}
+.card{text-align:center;border-radius:24px;box-sizing:border-box;width:min(50vw, calc(100vw - 2rem));container-type:inline-size;padding:clamp(1rem,4vw,3rem);margin:0}
+#digital{font-size:clamp(1.5rem,20cqw,16vh);font-variant-numeric:tabular-nums}
+#analog{width:min(85cqw,52dvh);margin:auto}
 #date{margin-top:.75rem}
 #zone{margin-top:.4rem;opacity:.68;font-size:.85rem;overflow-wrap:anywhere}
+@media (max-width: 640px) {
+    .card {width:calc(100vw - 2rem)}
+}
+@media (max-height: 420px) {
+    .controls {position:relative;top:auto;right:auto;justify-self:end;margin:1rem}
+    body {grid-template-rows:auto 1fr}
+    .card {margin-bottom:1rem}
+}
 </style>
 <aside class="controls">
 <div class="panel" role="group" aria-label="Clock display">
@@ -124,3 +132,4 @@ function update() {
 update();
 setInterval(update, 1000);
 </script>
+
