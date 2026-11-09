@@ -234,6 +234,7 @@ const rings = [
         const text = svgElement("text");
         text.textContent = value;
         text.setAttribute("x", 86 + ringIndex * 86);
+        text.setAttribute("text-anchor", "middle");
         text.setAttribute("dominant-baseline", "central");
         text.setAttribute("transform", "rotate(" + index * 360 / values.length + ")");
         group.append(text);
@@ -245,7 +246,7 @@ const rings = [
 ["h", "min", "s"].forEach((unit, index) => {
     const label = svgElement("text");
     label.classList.add("wheel-unit");
-    label.setAttribute("x", 130 + index * 86);
+    label.setAttribute("x", 129 + index * 86);
     label.setAttribute("text-anchor", "middle");
     label.setAttribute("dominant-baseline", "central");
     label.textContent = unit;
@@ -293,5 +294,4 @@ document.querySelector(".card").style.removeProperty("visibility");
 setInterval(update, 100);
 syncClock();
 </script>
-
 
